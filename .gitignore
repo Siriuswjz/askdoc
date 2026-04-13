@@ -1,0 +1,21 @@
+# Environment
+.env
+.env.*
+
+# Claude
+.claude/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Uploads
+uploads/
+
+# macOS
+.DS_Store
