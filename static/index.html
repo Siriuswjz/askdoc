@@ -347,6 +347,34 @@
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Markdown rendering ── */
+    .bubble.ai h1,.bubble.ai h2,.bubble.ai h3 { margin: 12px 0 6px; font-weight: 600; }
+    .bubble.ai h1 { font-size: 16px; }
+    .bubble.ai h2 { font-size: 15px; }
+    .bubble.ai h3 { font-size: 14px; }
+    .bubble.ai p { margin: 6px 0; }
+    .bubble.ai ul,.bubble.ai ol { padding-left: 20px; margin: 6px 0; }
+    .bubble.ai li { margin: 3px 0; }
+    .bubble.ai code {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1px 5px;
+      font-family: monospace; font-size: 12px;
+    }
+    .bubble.ai pre {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px; margin: 8px 0;
+      overflow-x: auto;
+    }
+    .bubble.ai pre code { background: none; border: none; padding: 0; font-size: 12px; }
+    .bubble.ai blockquote {
+      border-left: 3px solid var(--accent); padding-left: 12px;
+      color: var(--text-muted); margin: 8px 0;
+    }
+    .bubble.ai strong { font-weight: 600; color: var(--text); }
+    .bubble.ai table { border-collapse: collapse; margin: 8px 0; width: 100%; font-size: 13px; }
+    .bubble.ai th,.bubble.ai td { border: 1px solid var(--border); padding: 6px 10px; }
+    .bubble.ai th { background: var(--surface); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -409,8 +437,10 @@
 
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
   const API = '';
+  marked.setOptions({ breaks: true, gfm: true });
   let documents = [];
   let selectedFiles = [];
   let isLoading = false;
@@ -620,9 +650,12 @@
       sourcesHtml = `<div class="sources"><div class="sources-label">引用来源</div>${chips}</div>`;
     }
 
+    const contentHtml = role === 'ai'
+      ? marked.parse(content)
+      : escapeHtml(content);
     wrap.innerHTML = `
       <div class="avatar ${role}">${avatar}</div>
-      <div class="bubble">${escapeHtml(content)}${sourcesHtml}</div>`;
+      <div class="bubble ${role}">${contentHtml}${sourcesHtml}</div>`;
     chat.appendChild(wrap);
     chat.scrollTop = chat.scrollHeight;
     return wrap;

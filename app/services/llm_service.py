@@ -73,6 +73,8 @@ async def answer_question(
         max_tokens=2048,
     )
 
-    answer = response.choices[0].message.content or "I was unable to generate an answer."
+    import re
+    raw = response.choices[0].message.content or "I was unable to generate an answer."
+    answer = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
 
     return AskResponse(answer=answer, sources=_chunks_to_sources(chunks))
