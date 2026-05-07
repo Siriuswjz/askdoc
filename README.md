@@ -96,7 +96,7 @@ docker compose up --build
 
 ## 公网部署（Railway）
 
-> 部署完成后获得公网域名，面试演示直接打开即可。
+> 部署完成后获得公网域名。
 
 1. 在 [railway.app](https://railway.app) 新建项目，Add Plugin → **PostgreSQL**（已内置 pgvector）
 2. 连接 GitHub 仓库，Railway 自动识别 `railway.toml` 并构建
