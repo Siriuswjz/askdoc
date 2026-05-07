@@ -58,18 +58,27 @@ async def answer_question(
     question: str,
     db,
     document_ids: list[str] | None = None,
+    history: list[dict] | None = None,  # [{"role": "user"|"assistant", "content": "..."}]
+    conversation_id: str = "",
 ) -> AskResponse:
     chunks = await search(question, db, top_k=settings.retrieval_top_k, document_ids=document_ids)
 
+    # Build message list: system → trimmed history → current question with context
+    messages: list[dict] = [{"role": "system", "content": _SYSTEM_PROMPT}]
+
+    if history:
+        # Keep only the last N messages to control token usage
+        tail = history[-settings.conversation_history_limit:]
+        messages.extend(tail)
+
+    messages.append({
+        "role": "user",
+        "content": f"Document context:\n\n{_format_chunks(chunks)}\n\nQuestion: {question}",
+    })
+
     response = await _get_client().chat.completions.create(
         model=_MODEL,
-        messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {
-                "role": "user",
-                "content": f"Document context:\n\n{_format_chunks(chunks)}\n\nQuestion: {question}",
-            },
-        ],
+        messages=messages,
         max_tokens=2048,
     )
 
@@ -77,4 +86,4 @@ async def answer_question(
     raw = response.choices[0].message.content or "I was unable to generate an answer."
     answer = re.sub(r"<think>.*?</think>", "", raw, flags=re.DOTALL).strip()
 
-    return AskResponse(answer=answer, sources=_chunks_to_sources(chunks))
+    return AskResponse(answer=answer, sources=_chunks_to_sources(chunks), conversation_id=conversation_id)

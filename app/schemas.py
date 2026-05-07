@@ -24,6 +24,7 @@ class ChunkResponse(BaseModel):
 class AskRequest(BaseModel):
     question: str
     document_ids: list[str] | None = None  # None = search all documents
+    conversation_id: str | None = None     # None = start a new conversation
 
 
 class Source(BaseModel):
@@ -37,3 +38,4 @@ class Source(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     sources: list[Source]
+    conversation_id: str  # always returned so the client can continue the thread

@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.config import settings
 from app.models import DocumentChunk, Document
 from app.services.embedding_service import embed_query
 
@@ -26,8 +27,11 @@ async def search(
     top_k: int = 5,
     document_ids: list[str] | None = None,
 ) -> list[RetrievedChunk]:
-    """Find the top-k most relevant chunks for a query."""
+    """Find the top-k most relevant chunks for a query, with optional reranking."""
     query_vector = await embed_query(query)
+
+    # Fetch more candidates when reranking is enabled
+    fetch_n = settings.retrieval_candidates if settings.use_rerank else top_k
 
     stmt = (
         select(
@@ -36,7 +40,7 @@ async def search(
         )
         .options(selectinload(DocumentChunk.document))
         .order_by(DocumentChunk.embedding.cosine_distance(query_vector))
-        .limit(top_k)
+        .limit(fetch_n)
     )
 
     if document_ids:
@@ -44,7 +48,7 @@ async def search(
 
     rows = (await db.execute(stmt)).all()
 
-    return [
+    candidates = [
         RetrievedChunk(
             chunk_id=chunk.id,
             document_id=chunk.document_id,
@@ -56,3 +60,9 @@ async def search(
         )
         for chunk, similarity in rows
     ]
+
+    if settings.use_rerank and candidates:
+        from app.services.rerank_service import rerank
+        candidates = await rerank(query, candidates, top_n=top_k)
+
+    return candidates

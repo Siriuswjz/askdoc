@@ -51,6 +51,20 @@
     header h1 { font-size: 16px; font-weight: 600; }
     header span { color: var(--text-muted); font-size: 12px; margin-left: auto; }
 
+    .new-chat-btn {
+      margin-left: 16px;
+      padding: 6px 14px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color .15s, color .15s;
+      white-space: nowrap;
+    }
+    .new-chat-btn:hover { border-color: var(--accent); color: var(--accent); }
+
     .layout {
       display: flex;
       flex: 1;
@@ -382,7 +396,8 @@
 <header>
   <div class="logo">📚</div>
   <h1>企业文档问答系统</h1>
-  <span id="status-text">RAG · DeepSeek-R1</span>
+  <span id="status-text">RAG · Rerank · DeepSeek-R1</span>
+  <button class="new-chat-btn" onclick="newConversation()" title="开启新对话">✦ 新对话</button>
 </header>
 
 <div class="layout">
@@ -444,6 +459,7 @@
   let documents = [];
   let selectedFiles = [];
   let isLoading = false;
+  let currentConversationId = null;  // null = start new conversation on next send
 
   // ── Toast ──
   function showToast(msg, type = 'success') {
@@ -686,6 +702,19 @@
     return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   }
 
+  // ── New conversation ──
+  function newConversation() {
+    currentConversationId = null;
+    const chat = document.getElementById('chat-area');
+    chat.innerHTML = `
+      <div class="welcome" id="welcome">
+        <div class="big-icon">🔍</div>
+        <h2>开始提问</h2>
+        <p>上传文档后，在下方输入问题，AI 将基于文档内容为你解答。</p>
+      </div>`;
+    showToast('已开启新对话');
+  }
+
   async function sendQuestion() {
     const q = textarea.value.trim();
     if (!q || isLoading || !documents.length) return;
@@ -701,6 +730,7 @@
     try {
       const body = { question: q };
       if (selectedDocIds.length) body.document_ids = selectedDocIds;
+      if (currentConversationId) body.conversation_id = currentConversationId;
 
       const r = await fetch(`${API}/api/qa/ask`, {
         method: 'POST',
@@ -715,6 +745,8 @@
         appendMessage('ai', '请求失败：' + (err.detail || r.status));
       } else {
         const data = await r.json();
+        // Persist conversation_id for subsequent turns
+        currentConversationId = data.conversation_id;
         appendMessage('ai', data.answer, data.sources || []);
       }
     } catch (e) {
